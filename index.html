@@ -1,150 +1,185 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Investments</title>
-    <link rel="apple-touch-icon" href="icon.png">
-    <link rel="manifest" href="manifest.json">
-    
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
-
+    <title>Quantum OS | Unlimited Edition</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; padding: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #334155; }
-        input, textarea { width: 100%; margin-bottom: 12px; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        button { background: #3b82f6; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #2563eb; }
-        #stock-result { font-size: 1.2rem; font-weight: bold; color: #4ade80; margin-top: 15px; text-align: center; }
-        .post-img { max-width: 100%; border-radius: 10px; margin-top: 15px; border: 1px solid #334155; }
-        h3 { margin-top: 0; color: #94a3b8; }
-        .feed-post { border-bottom: 1px solid #334155; padding-bottom: 20px; margin-bottom: 20px; }
+        :root { --bg: #020617; --card: #1e293b; --accent: #3b82f6; --text: #f1f5f9; --green: #4ade80; --gray: #94a3b8; --private: #f43f5e; --chat: #8b5cf6; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 30px; }
+        .container { max-width: 480px; margin: 0 auto; padding: 15px; }
+        
+        /* Header & Navigation */
+        .view-mode { display: flex; background: #111827; border-radius: 12px; padding: 4px; margin-bottom: 15px; border: 1px solid #374151; }
+        .view-btn { flex: 1; padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: bold; color: var(--gray); }
+        .view-btn.active { background: var(--accent); color: white; }
+        
+        .profile-header { background: linear-gradient(180deg, #1e293b, #0f172a); border: 1px solid #334155; padding: 20px; border-radius: 24px; text-align: center; margin-bottom: 15px; }
+        .avatar { width: 70px; height: 70px; background: var(--accent); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; border: 3px solid var(--bg); }
+
+        .tabs-nav { display: flex; overflow-x: auto; gap: 10px; margin-bottom: 15px; padding-bottom: 5px; scrollbar-width: none; }
+        .tab { padding: 8px 14px; cursor: pointer; color: var(--gray); white-space: nowrap; border-radius: 15px; font-size: 0.8rem; background: #1e293b; }
+        .tab.active { background: var(--accent); color: white; }
+
+        /* Content UI */
+        .card { background: var(--card); padding: 15px; border-radius: 18px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .hidden { display: none !important; }
+        input, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; }
+        button { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: 600; cursor: pointer; }
+
+        /* Chat System */
+        .chat-area { height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; padding: 5px; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 0.85rem; position: relative; }
+        .msg.received { background: #334155; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg.sent { background: var(--chat); align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg small { display: block; font-size: 0.65rem; opacity: 0.6; margin-bottom: 2px; }
+
+        /* Game & Video Styles */
+        #game-canvas { background: #000; display: block; margin: 10px auto; border: 2px solid var(--accent); width: 100%; max-width: 250px; }
+        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; border-radius: 10px; overflow: hidden; }
+        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
 
-    <h1 style="text-align: center; color: #3b82f6;">Quantum Investments</h1>
-
-    <div class="card">
-        <h3>🔍 Global Market Pulse</h3>
-        <input type="text" id="stock-input" placeholder="Enter Ticker (e.g. AAPL, TSLA, NVDA)">
-        <button onclick="searchStock()">Check Live Price</button>
-        <div id="stock-result"></div>
+<div class="container">
+    <div class="view-mode">
+        <div class="view-btn active" id="btn-owner" onclick="setRole('owner')">Admin View</div>
+        <div class="view-btn" id="btn-visitor" onclick="setRole('visitor')">Visitor View</div>
     </div>
 
-    <div class="card">
-        <h3>📸 Share Your Analysis</h3>
-        <input type="file" id="image-input" accept="image/*">
-        <textarea id="post-text" rows="3" placeholder="What's your move? Buy, Sell, or Hold?"></textarea>
-        <button id="post-btn" onclick="uploadAndPost()">Publish Post</button>
+    <div class="profile-header">
+        <div class="avatar" id="disp-pfp">Q</div>
+        <h3 id="disp-name" style="margin:0;">Quantum Admin</h3>
+        <p id="disp-bio" style="color:var(--gray); font-size:0.75rem; margin-top:4px;">Multi-Asset Trader & Dev</p>
     </div>
 
-    <div id="feed-container">
-        <h2 style="color: #94a3b8;">Community Insights</h2>
-        <div id="feed"></div>
+    <div class="tabs-nav" id="main-tabs"></div>
+
+    <div id="content-panes">
+        <div id="pane-chat">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <strong style="color:var(--chat)">🌐 Global Chat</strong>
+                    <small id="online-count" style="color:var(--green)">14 Online</small>
+                </div>
+                <div class="chat-area" id="chat-box"></div>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="chat-input" placeholder="Type a message..." style="margin:0;">
+                    <button onclick="sendMsg()" style="width:auto; background:var(--chat)">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pane-posts" class="hidden">
+            <div id="owner-post-ui" class="card">
+                <textarea id="post-text" placeholder="Share market insight..."></textarea>
+                <button onclick="addPost()">Post</button>
+            </div>
+            <div id="feed"></div>
+        </div>
+
+        <div id="pane-games" class="hidden">
+            <div class="card" style="text-align:center;">
+                <h3>Snake v1.0</h3>
+                <canvas id="game-canvas" width="300" height="300"></canvas>
+                <button onclick="startSnake()">Start Game</button>
+            </div>
+        </div>
+
+        <div id="pane-videos" class="hidden"><div id="video-feed"></div></div>
+        <div id="pane-shop" class="hidden"><div id="prod-list"></div></div>
+        <div id="pane-data" class="hidden"><div class="card"><h3 style="color:var(--private)">🔒 Admin Vault</h3><p>Server Latency: 14ms</p></div></div>
     </div>
+</div>
 
-    <script>
-        // --- 2. PASTE YOUR FIREBASE CONFIG BELOW ---
-        const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "your-project.firebaseapp.com",
-            databaseURL: "https://your-project.firebaseio.com",
-            projectId: "your-project",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "12345",
-            appId: "1:12345:web:abcde"
-        };
-        firebase.initializeApp(firebaseConfig);
-        // --------------------------------------------
+<script>
+    let role = 'owner';
+    let profile = { name: "Quantum Admin", tabs: { chat: true, posts: true, games: true, videos: true, shop: true }};
+    let messages = [
+        { user: "Trader_Joe", text: "Anyone watching the $NVDA spike?", type: "received" },
+        { user: "FinanceGuru", text: "Strong support at 120.", type: "received" }
+    ];
 
-        // 3. STOCK SEARCH FUNCTION (Using your Key: Z0V11NK2AMERKMTB)
-        async function searchStock() {
-            const symbol = document.getElementById('stock-input').value.toUpperCase();
-            const alphaKey = 'Z0V11NK2AMERKMTB'; 
-            const resultDiv = document.getElementById('stock-result');
-            
-            if(!symbol) return;
-            resultDiv.innerText = "Connecting to Exchange...";
-            
-            try {
-                const response = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${alphaKey}`);
-                const data = await response.json();
-                const price = data['Global Quote']['05. price'];
-                const change = data['Global Quote']['09. change'];
-                
-                if (price) {
-                    resultDiv.innerHTML = `${symbol}: $${parseFloat(price).toFixed(2)}<br><span style="font-size: 0.8rem; color: #94a3b8;">Change: ${change}</span>`;
-                } else {
-                    resultDiv.innerText = "Symbol not found. Try AAPL or TSLA.";
-                }
-            } catch (e) {
-                resultDiv.innerText = "Market Data Timeout.";
-            }
-        }
+    // --- CHAT LOGIC ---
+    function sendMsg() {
+        const input = document.getElementById('chat-input');
+        if(!input.value) return;
+        messages.push({ user: role === 'owner' ? "You (Admin)" : "Visitor", text: input.value, type: "sent" });
+        input.value = "";
+        renderChat();
+        
+        // Simulating a reply after 2 seconds
+        setTimeout(() => {
+            messages.push({ user: "MarketBot", text: "Analyzing your sentiment...", type: "received" });
+            renderChat();
+        }, 2000);
+    }
 
-        // 4. IMAGE UPLOAD & POST FUNCTION
-        async function uploadAndPost() {
-            const fileInput = document.getElementById('image-input');
-            const file = fileInput.files[0];
-            const text = document.getElementById('post-text').value;
-            const btn = document.getElementById('post-btn');
+    function renderChat() {
+        const box = document.getElementById('chat-box');
+        box.innerHTML = messages.map(m => `
+            <div class="msg ${m.type}">
+                <small>${m.user}</small>
+                ${m.text}
+            </div>
+        `).join('');
+        box.scrollTop = box.scrollHeight;
+    }
 
-            if (!file || !text) {
-                alert("Please add both an image and a description.");
-                return;
-            }
+    // --- SNAKE GAME ---
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
+    let snake, sDir, sInterval;
+    function startSnake() {
+        clearInterval(sInterval);
+        snake = [{x: 40, y: 40}, {x:20, y:40}]; sDir = "RIGHT";
+        sInterval = setInterval(runSnake, 150);
+    }
+    function runSnake() {
+        ctx.fillStyle = "black"; ctx.fillRect(0,0,300,300);
+        ctx.fillStyle = "blue"; snake.forEach(p => ctx.fillRect(p.x, p.y, 18, 18));
+        let h = {...snake[0]};
+        if(sDir=="RIGHT") h.x+=20; if(sDir=="LEFT") h.x-=20; if(sDir=="UP") h.y-=20; if(sDir=="DOWN") h.y+=20;
+        if(h.x<0||h.x>=300||h.y<0||h.y>=300) clearInterval(sInterval);
+        snake.unshift(h); snake.pop();
+    }
+    window.onkeydown = e => {
+        if(e.key=="ArrowUp") sDir="UP"; if(e.key=="ArrowDown") sDir="DOWN";
+        if(e.key=="ArrowLeft") sDir="LEFT"; if(e.key=="ArrowRight") sDir="RIGHT";
+    };
 
-            btn.disabled = true;
-            btn.innerText = "Uploading to Cloud...";
+    // --- CORE NAVIGATION ---
+    function setRole(r) {
+        role = r;
+        document.getElementById('btn-owner').classList.toggle('active', r==='owner');
+        document.getElementById('btn-visitor').classList.toggle('active', r!=='owner');
+        document.getElementById('owner-post-ui').classList.toggle('hidden', r!=='owner');
+        renderTabs();
+    }
 
-            try {
-                // Upload Image to Firebase Storage
-                const storageRef = firebase.storage().ref('posts/' + Date.now() + "_" + file.name);
-                await storageRef.put(file);
-                const imageUrl = await storageRef.getDownloadURL();
-
-                // Save post data to Realtime Database
-                await firebase.database().ref('posts').push({
-                    text: text,
-                    image: imageUrl,
-                    time: new Date().toLocaleString()
-                });
-
-                alert("Post is Live!");
-                fileInput.value = "";
-                document.getElementById('post-text').value = "";
-            } catch (error) {
-                console.error(error);
-                alert("Upload failed. Check your Firebase Storage Rules!");
-            }
-            btn.disabled = false;
-            btn.innerText = "Publish Post";
-        }
-
-        // 5. LIVE FEED LISTENER
-        firebase.database().ref('posts').on('value', (snapshot) => {
-            const feed = document.getElementById('feed');
-            feed.innerHTML = ""; // Clear current feed
-            
-            const posts = [];
-            snapshot.forEach((child) => {
-                posts.unshift(child.val()); // Put newest posts at the top
-            });
-
-            posts.forEach(post => {
-                feed.innerHTML += `
-                    <div class="card feed-post">
-                        <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 10px;">${post.time}</div>
-                        <p style="margin: 0; line-height: 1.5;">${post.text}</p>
-                        <img src="${post.image}" class="post-img">
-                    </div>
-                `;
-            });
+    function renderTabs() {
+        const nav = document.getElementById('main-tabs'); nav.innerHTML = "";
+        Object.keys(profile.tabs).forEach(t => {
+            if(role === 'owner' || profile.tabs[t]) nav.innerHTML += `<div class="tab" id="tab-${t}" onclick="switchTab('${t}')">${t.toUpperCase()}</div>`;
         });
-    </script>
+        if(role === 'owner') nav.innerHTML += `<div class="tab" style="color:var(--private)" onclick="switchTab('data')">🔒 VAULT</div>`;
+        switchTab('chat');
+    }
+
+    function switchTab(id) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-'+id)?.classList.add('active');
+        ['chat','posts','games','videos','shop','data'].forEach(p => {
+            const el = document.getElementById('pane-'+p);
+            if(el) el.classList.add('hidden');
+        });
+        document.getElementById('pane-'+id).classList.remove('hidden');
+    }
+
+    // Init App
+    renderTabs();
+    renderChat();
+</script>
 </body>
 </html>
