@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Investments</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1d9bf0">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { background: #000; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; }
+        .active-tab { border-right: 4px solid #1d9bf0; background: rgba(29, 155, 240, 0.1); color: #1d9bf0 !important; }
+        .hidden { display: none !important; }
+        .tab-page { height: 100vh; width: 100%; overflow-y: auto; }
+        .glass { background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #1d9bf0; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex h-screen w-screen">
+
+    <nav class="w-64 border-r border-zinc-800 flex flex-col p-6 bg-black z-20">
+        <h1 class="text-xl font-black text-blue-500 italic mb-12 tracking-tighter uppercase">Quantum</h1>
+        <div class="space-y-4 flex-1">
+            <button onclick="showTab('home')" id="btn-home" class="w-full text-left p-4 rounded-xl active-tab flex items-center"><i class="fa fa-terminal mr-4"></i> Terminal</button>
+            <button onclick="showTab('markets')" id="btn-markets" class="w-full text-left p-4 rounded-xl text-zinc-500 hover:bg-zinc-900 flex items-center"><i class="fa fa-chart-line mr-4"></i> Markets</button>
+            <button onclick="showTab('profile')" id="btn-profile" class="w-full text-left p-4 rounded-xl text-zinc-500 hover:bg-zinc-900 flex items-center"><i class="fa fa-user-shield mr-4"></i> System</button>
+        </div>
+        <div class="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-[10px] text-zinc-500">CLOUD_v1.5_LIVE</div>
+    </nav>
+
+    <main class="flex-1 bg-black relative">
+        <div id="tab-home" class="tab-page">
+            <header class="p-6 border-b border-zinc-800 font-bold tracking-widest glass sticky top-0 z-10">LIVE_DATABASE_FEED</header>
+            <div class="p-6 border-b border-zinc-800 bg-zinc-950/30">
+                <textarea id="postBox" class="w-full bg-transparent text-xl outline-none resize-none h-24 text-white" placeholder="Broadcast to cloud..."></textarea>
+                <div class="flex justify-end pt-2 border-t border-zinc-900">
+                    <button onclick="handlePost()" class="bg-blue-500 hover:bg-blue-600 px-8 py-2 rounded-full font-bold">EXECUTE</button>
+                </div>
+            </div>
+            <div id="feed" class="p-4 space-y-4 flex flex-col-reverse"></div>
+        </div>
+
+        <div id="tab-markets" class="tab-page hidden p-8">
+            <h2 class="text-3xl font-black text-blue-500 italic uppercase">Markets</h2>
+            <p id="btc-price" class="text-4xl font-mono text-green-400 mt-4">$102,491.50</p>
+        </div>
+
+        <div id="tab-gaming" class="tab-page hidden">
+            <div class="h-10 bg-red-600 flex justify-between items-center px-4">
+                <span id="game-title" class="text-white font-black text-[10px]">Override Active</span>
+                <button onclick="showTab('home')" class="text-white border border-white px-2 py-1 rounded text-[10px]">EXIT</button>
+            </div>
+            <iframe id="game-frame" src="" class="w-full h-full border-none"></iframe>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCrsMM_a3W0PZpYehvopA2uQdeoT2tC93E",
+            authDomain: "quantum-investments-6001d.firebaseapp.com",
+            projectId: "quantum-investments-6001d",
+            storageBucket: "quantum-investments-6001d.firebasestorage.app",
+            messagingSenderId: "720520644526",
+            appId: "1:720520644526:web:926a7b351c42c2a7dc2a3f",
+            measurementId: "G-3BMXSSS6VM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // SEND TO CLOUD
+        window.handlePost = async () => {
+            const box = document.getElementById('postBox');
+            const val = box.value.trim();
+            if(!val) return;
+
+            if(val === "{LETSGOGAMING}") launchGame("https://js-dos.com/games/doom.exe.html", "DOOM");
+            else if(val === "{LETSGOGAMING2}") launchGame("https://scratch.mit.edu/projects/169046200/embed", "FNAF");
+            else {
+                await addDoc(collection(db, "posts"), {
+                    text: val,
+                    createdAt: serverTimestamp()
+                });
+            }
+            box.value = '';
+        };
+
+        // SYNC FROM CLOUD
+        const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
+        onSnapshot(q, (snapshot) => {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const time = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleTimeString() : "Syncing...";
+                const item = `<div class="p-4 border border-zinc-800 rounded-xl bg-zinc-950">
+                    <p class="text-blue-500 text-[9px] uppercase font-bold">Cloud_Entry // ${time}</p>
+                    <p class="text-zinc-300">${data.text}</p>
+                </div>`;
+                feed.insertAdjacentHTML('beforeend', item);
+            });
+        });
+
+        function launchGame(url, title) {
+            document.getElementById('game-title').innerText = title;
+            document.getElementById('game-frame').src = url;
+            showTab('gaming');
+        }
+    </script>
+
+    <script>
+        function showTab(name) {
+            document.querySelectorAll('.tab-page').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab', 'text-blue-500'));
+            document.getElementById('tab-' + name).classList.remove('hidden');
+            document.getElementById('btn-' + name)?.classList.add('active-tab');
+        }
+    </script>
+</body>
+</html>
